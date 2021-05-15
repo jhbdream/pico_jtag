@@ -12,18 +12,21 @@
 #include "led.h"
 #include "pio_jtag.h"
 
-static void cdc_task(void);
-
 int main()
 {
     stdio_usb_init();
-    jtag_init();
+    led_blinking_init();
 
     printf("board init ok!\n");
+    jtag_init(pio_jtag, 1000000);
+
+    JTAG_TAP_SHIFT_IR;
+    JTAG_TAP_TEST_LOGIC_RESET;
+    JTAG_TAP_SHIFT_IR;
 
     while (1)
     {
-        printf("board init ok!\n");
         led_blinking_task();
+        sleep_ms(1000);
     }
 }

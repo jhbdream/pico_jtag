@@ -5,56 +5,54 @@
 #include "pio_jtag.h"
 #include "bsp/board.h"
 
-#define PIN_TDI 16
-#define PIN_TDO 17
-#define PIN_TCK 18
-#define PIN_TMS 19
-#define PIN_RST 20
-#define PIN_TRST 21
+pio_jtag_inst_t jtag = DECLEAR_PIO_JTAG(JTAG_PIO, JTAG_SM, PIN_TDI, PIN_TDO, PIN_TCK, PIN_TMS);
 
-pio_jtag_inst_t jtag = {
-            .pio = pio0,
-            .sm = 0
-};
+pio_jtag_inst_t *pio_jtag = &jtag;
 
-void init_pins(uint pin_tck, uint pin_tdi, uint pin_tdo, uint pin_tms, uint pin_rst, uint pin_trst)
+/**
+ * @brief 设置执行一条指令的周期，或称为指令频率
+ *
+ * @param jtag
+ * @param freq
+ */
+void pio_set_freq(PIO pio, uint sm, uint freq)
 {
-    bi_decl(bi_4pins_with_names(PIN_TCK, "TCK", PIN_TDI, "TDI", PIN_TDO, "TDO", PIN_TMS, "TMS"));
-    bi_decl(bi_2pins_with_names(PIN_RST, "RST", PIN_TRST, "TRST"));
+    uint sys_freq,divider;
 
-    gpio_clr_mask((1u << pin_tms) | (1u << pin_rst) | (1u << pin_trst));
-    gpio_init_mask((1u << pin_tms) | (1u << pin_rst) | (1u << pin_trst));
-    gpio_set_dir_masked( (1u << pin_tms) | (1u << pin_rst) | (1u << pin_trst), 0xffffffffu);
+    sys_freq = clock_get_hz(clk_sys);
+
+    divider = (sys_freq / freq);
+
+    pio_sm_set_clkdiv(pio, sm, divider);
 }
 
-void jtag_set_clk_freq(const pio_jtag_inst_t *jtag, uint freq_khz) {
-    uint clk_sys_freq_khz = clock_get_hz(clk_sys) / 1000;
-    uint32_t divider = (clk_sys_freq_khz / freq_khz) / 4;
-    divider = (divider < 2) ? 2 : divider;                      //max reliable freq
-    pio_sm_set_clkdiv_int_frac(pio0, jtag->sm, divider, 0);
+void jtag_init(pio_jtag_inst_t *jtag, uint freq)
+{
+    //pio_jtag_init(jtag->pio, pio_jtag->sm, jtag->pin_tck, jtag->pin_tdi, jtag->pin_tdo);
+    //pio_set_freq(jtag, freq);
+    //pio_sm_set_enabled(jtag->pio, jtag->sm, true);
+
+    pio_jtag_tap_init(pio1, 0, PIN_TCK, PIN_TMS);
+    pio_set_freq(pio1, 0, 25000000);
+    pio_sm_set_enabled(pio1, 0, true);
 }
 
-void init_jtag_pio(pio_jtag_inst_t* jtag, uint freq, uint pin_tck, uint pin_tdi, uint pin_tdo, uint pin_tms, uint pin_rst, uint pin_trst)
+/***********************************************************
+*   函数说明：JTAG TAP 状态机控制函数                      *
+*   输入：    控制序列，序列长度                           *
+*   输出：    无                                           *
+*   调用函数：无                                           *
+* -------------------------------------------------------- *
+*   使用说明                                               *
+*           1、 TMS在TCK上升边沿输出状态控制量。           *
+*           2、 连续5个TCK周期在TMS上输出高电平将进入Test- *
+*               Logic-Reset模式。                          *
+*           3、 使用该函数时，请将状态机跳转以后TMS需要保  *
+*               持的电平也作为一个有效输入加入到序列的末尾 *
+*               但描述序列长度的数值不需要相应的增加。     *
+***********************************************************/
+void JTAG_TAP_Control(uint8_t chCTRStream,uint8_t chLength)
 {
-    init_pins(pin_tck, pin_tdi, pin_tdo, pin_tms, pin_rst, pin_trst);
-    jtag->pin_tdi = pin_tdi;
-    jtag->pin_tdo = pin_tdo;
-    jtag->pin_tck = pin_tck;
-    jtag->pin_tms = pin_tms;
-    jtag->pin_rst = pin_rst;
-    jtag->pin_trst = pin_trst;
-    uint16_t clkdiv = 31;  // around 1 MHz @ 125MHz clk_sys
-    pio_jtag_init(jtag->pio, jtag->sm,
-                    clkdiv,
-                    pin_tck,
-                    pin_tdi,
-                    pin_tdo
-                 );
-
-    jtag_set_clk_freq(jtag, freq);
-}
-
-void jtag_init(void)
-{
-    init_jtag_pio(&jtag, 1000, PIN_TCK, PIN_TDI, PIN_TDO, PIN_TMS, PIN_RST, PIN_TRST);
+    pio_sm_put_blocking(pio1, 0, chLength - 1);
+    pio_sm_put_blocking(pio1, 0, chCTRStream);
 }

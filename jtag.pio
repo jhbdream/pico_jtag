@@ -1,55 +1,47 @@
-;JTAG implementation
-
-.program djtag_tdo
+;jtag 模式线状态机
+.program jtag_tap
 .side_set 1 opt
 
-; Pin assignments:
-; - TCK is side-set pin 0
-; - TDI is OUT pin 0
-; - TDO is IN pin 0
-;
-; Autopush and autopull must be enabled, and the serial frame size is set by
-; configuring the push/pull threshold (32 bits). Shift should be left
+    ;获取长度
+    pull
+    mov x, osr
 
-; data is captured on the leading edge of each TCK pulse, and
-; transitions on the trailing edge, or some time before the first leading edge.
+    ;获取数据
+    pull
 
-    pull                        ; get length-1 and disregard previous OSR state
-    out x, 32       side 0      ; this moves the first 32 bits into X
-loop:
-    out pins, 1     side 0      ; Stall here on empty (sideset proceeds even if instruction stalls, so we stall with SCK low
-    in pins, 1      side 1 [1]
-    jmp x-- loop    side 0
-    push            side 0      ; Force the last ISR bits to be pushed to the tx fifo
+bitloops:
+    out pins, 1         side 0
+    jmp x-- bitloops    side 1
+    out pins, 1         side 0
 
 % c-sdk {
-#include "hardware/gpio.h"
 
-static inline void pio_jtag_init(PIO pio, uint sm,
-        uint16_t clk_div, uint pin_tck, uint pin_tdi, uint pin_tdo)
+#include "hardware/gpio.h"
+static inline void pio_jtag_tap_init(PIO pio, uint sm, uint pin_tck, uint pin_tms)
 {
-    uint prog_offs = pio_add_program(pio, &djtag_tdo_program);
-    pio_sm_config c = djtag_tdo_program_get_default_config(prog_offs);
-    sm_config_set_out_pins(&c, pin_tdi, 1);
-    sm_config_set_in_pins(&c, pin_tdo);
+    uint prog_offs = pio_add_program(pio, &jtag_tap_program);
+    pio_sm_config c = jtag_tap_program_get_default_config(prog_offs);
+
+    // 设置out指令连接的pin
+    sm_config_set_out_pins(&c, pin_tms, 1);
+
+    //设置side_set指令连接的pin
     sm_config_set_sideset_pins(&c, pin_tck);
 
     //(shift to left, auto push/pull, threshold=nbits)
-    sm_config_set_out_shift(&c, false, true, 8);
-    sm_config_set_in_shift(&c, false, true, 8);
+    sm_config_set_out_shift(&c, true, false, 32);
 
-    sm_config_set_clkdiv_int_frac(&c, clk_div, 0);
+    //设置输出电平为0
+    pio_sm_set_pins_with_mask(pio, sm, 0,
+                            (1u << pin_tck) | (1u << pin_tms));
 
-    // TDI, TCK output are low, TDO is input
-    pio_sm_set_pins_with_mask(pio, sm, 0, (1u << pin_tck) | (1u << pin_tdi));
-    pio_gpio_init(pio, pin_tdi);
+    //设置 tck tms 作为输出
+    pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_tck) | (1u << pin_tms),
+                            (1u << pin_tck) | (1u << pin_tms));
+
     pio_gpio_init(pio, pin_tck);
-
-    // jtag is synchronous, so bypass input synchroniser to reduce input delay.
-    hw_set_bits(&pio->input_sync_bypass, 1u << pin_tdo);
-    gpio_set_pulls(pin_tdo, false, true); //TDO is pulled down
+    pio_gpio_init(pio, pin_tms);
 
     pio_sm_init(pio, sm, prog_offs, &c);
-    pio_sm_set_enabled(pio, sm, true);
 }
 %}
