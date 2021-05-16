@@ -20,13 +20,9 @@ int main()
     printf("board init ok!\n");
     jtag_init(pio_jtag, 1000000);
 
-    JTAG_TAP_SHIFT_IR;
+    uint32_t idcode = JTAG_Read_Device_Identification();
 
-    sleep_ms(200);
-    uint32_t write = 0x5a;
-    uint32_t read;
-    JTAG_Shift_Data(&write, &read, 8);
-
+    printf("idcode: 0x%032x", idcode);
     while (1)
     {
         led_blinking_task();

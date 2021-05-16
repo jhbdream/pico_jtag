@@ -13,9 +13,10 @@ bitloops:
     out pins, 1         side 0  [1]
     jmp x-- bitloops    side 1  [1]
     out pins, 1         side 0  [1]
+    push
 
 .program jtag_date
-.side_set 1 opt
+.side_set 2 opt
     ;获取长度
     pull
     mov x, osr
@@ -26,5 +27,9 @@ bitloops:
     out pins, 1 side 0 [1] ; Stall here on empty (sideset proceeds even if
     in pins, 1  side 1     ; instruction stalls, so we stall with SCK low)
     jmp x-- bitloops
+
+    out pins, 1 side 2 [1] ; 设置tms 退出shift状态
+    in pins, 1  side 3 [1]
+
     mov x, x    side 0      ;保持空闲时候为低电平
     push
