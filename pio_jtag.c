@@ -2,12 +2,58 @@
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 #include "hardware/clocks.h"
+#include "hardware/gpio.h"
 #include "pio_jtag.h"
 #include "bsp/board.h"
 
 pio_jtag_inst_t jtag = DECLEAR_PIO_JTAG(JTAG_PIO, JTAG_SM, PIN_TDI, PIN_TDO, PIN_TCK, PIN_TMS);
 
 pio_jtag_inst_t *pio_jtag = &jtag;
+
+
+static inline void pio_jtag_tap_init(PIO pio, uint sm, uint pin_tck, uint pin_tms)
+{
+    uint prog_offs = pio_add_program(pio, &jtag_tap_program);
+    pio_sm_config c = jtag_tap_program_get_default_config(prog_offs);
+
+    sm_config_set_out_pins(&c, pin_tms, 1);
+    sm_config_set_sideset_pins(&c, pin_tck);
+
+    sm_config_set_out_shift(&c, true, false, 32);
+
+    pio_sm_set_pins_with_mask(pio, sm, 0,
+                            (1u << pin_tck) | (1u << pin_tms));
+
+    pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_tck) | (1u << pin_tms),
+                            (1u << pin_tck) | (1u << pin_tms));
+
+    pio_gpio_init(pio, pin_tck);
+    pio_gpio_init(pio, pin_tms);
+
+    pio_sm_init(pio, sm, prog_offs, &c);
+}
+
+static inline void pio_jtag_date_init(PIO pio, uint sm, uint pin_tck, uint pin_tdi, uint pin_tdo)
+{
+    uint prog_offs = pio_add_program(pio, &jtag_date_program);
+    pio_sm_config c = jtag_date_program_get_default_config(prog_offs);
+
+    sm_config_set_out_pins(&c, pin_tdi, 1);
+    sm_config_set_in_pins(&c, pin_tdo);
+    sm_config_set_sideset_pins(&c, pin_tck);
+
+    sm_config_set_out_shift(&c, true, false, 32);
+    sm_config_set_in_shift(&c, true, false, 32);
+
+    pio_sm_set_pins_with_mask(pio, sm, 0, (1u << pin_tck) | (1u << pin_tdi));
+    pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_tck) | (1u << pin_tdi), (1u << pin_tck) | (1u << pin_tdi) | (1u << pin_tdo));
+
+    pio_gpio_init(pio, pin_tck);
+    pio_gpio_init(pio, pin_tdi);
+    pio_gpio_init(pio, pin_tdo);
+
+    pio_sm_init(pio, sm, prog_offs, &c);
+}
 
 /**
  * @brief 设置执行一条指令的周期，或称为指令频率
@@ -28,13 +74,14 @@ void pio_set_freq(PIO pio, uint sm, uint freq)
 
 void jtag_init(pio_jtag_inst_t *jtag, uint freq)
 {
-    //pio_jtag_init(jtag->pio, pio_jtag->sm, jtag->pin_tck, jtag->pin_tdi, jtag->pin_tdo);
-    //pio_set_freq(jtag, freq);
-    //pio_sm_set_enabled(jtag->pio, jtag->sm, true);
 
-    pio_jtag_tap_init(pio1, 0, PIN_TCK, PIN_TMS);
-    pio_set_freq(pio1, 0, 25000000);
-    pio_sm_set_enabled(pio1, 0, true);
+    pio_jtag_tap_init(pio0, 0, PIN_TCK, PIN_TMS);
+    pio_set_freq(pio0, 0, 25000000);
+    pio_sm_set_enabled(pio0, 0, true);
+
+    pio_jtag_date_init(pio0, 1, PIN_TCK, PIN_TDI, PIN_TDO);
+    pio_set_freq(pio0, 1, 25000000);
+    pio_sm_set_enabled(pio0, 1, true);
 }
 
 /***********************************************************
@@ -53,6 +100,13 @@ void jtag_init(pio_jtag_inst_t *jtag, uint freq)
 ***********************************************************/
 void JTAG_TAP_Control(uint8_t chCTRStream,uint8_t chLength)
 {
-    pio_sm_put_blocking(pio1, 0, chLength - 1);
-    pio_sm_put_blocking(pio1, 0, chCTRStream);
+    pio_sm_put_blocking(pio0, 0, chLength - 1);
+    pio_sm_put_blocking(pio0, 0, chCTRStream);
+}
+
+void JTAG_Shift_Data(uint32_t *pchOutBuffer, uint32_t *pchInBuffer, uint16_t wLength)
+{
+    pio_sm_put_blocking(pio0, 1, wLength - 1);
+    pio_sm_put_blocking(pio0, 1, *pchOutBuffer);
+    *pchOutBuffer = pio_sm_get_blocking(pio0, 1);
 }

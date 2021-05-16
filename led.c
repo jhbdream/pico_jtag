@@ -9,16 +9,28 @@
 #include "led.h"
 
 #ifndef LED_PIN
-#define LED_PIN PICO_DEFAULT_LED_PIN
+#define LED_PIN0 16
+#define LED_PIN1 17
+#define LED_PIN2 18
+#define LED_PIN LED_PIN0
 #endif
 
 static uint32_t blink_interval_ms = 1000;
 
 void led_blinking_init(void)
 {
-    gpio_init(LED_PIN);
-    gpio_set_dir(LED_PIN, 1);
-    gpio_put(LED_PIN, 0);
+    gpio_init(LED_PIN0);
+    gpio_init(LED_PIN1);
+    gpio_init(LED_PIN2);
+
+    gpio_set_dir(LED_PIN0, 1);
+    gpio_put(LED_PIN0, 0);
+
+    gpio_set_dir(LED_PIN1, 1);
+    gpio_put(LED_PIN1, 0);
+
+    gpio_set_dir(LED_PIN2, 1);
+    gpio_put(LED_PIN2, 0);
 }
 
 //--------------------------------------------------------------------+

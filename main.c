@@ -21,8 +21,11 @@ int main()
     jtag_init(pio_jtag, 1000000);
 
     JTAG_TAP_SHIFT_IR;
-    JTAG_TAP_TEST_LOGIC_RESET;
-    JTAG_TAP_SHIFT_IR;
+
+    sleep_ms(200);
+    uint32_t write = 0x5a;
+    uint32_t read;
+    JTAG_Shift_Data(&write, &read, 8);
 
     while (1)
     {

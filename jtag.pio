@@ -10,38 +10,21 @@
     pull
 
 bitloops:
-    out pins, 1         side 0
-    jmp x-- bitloops    side 1
-    out pins, 1         side 0
+    out pins, 1         side 0  [1]
+    jmp x-- bitloops    side 1  [1]
+    out pins, 1         side 0  [1]
 
-% c-sdk {
+.program jtag_date
+.side_set 1 opt
+    ;获取长度
+    pull
+    mov x, osr
 
-#include "hardware/gpio.h"
-static inline void pio_jtag_tap_init(PIO pio, uint sm, uint pin_tck, uint pin_tms)
-{
-    uint prog_offs = pio_add_program(pio, &jtag_tap_program);
-    pio_sm_config c = jtag_tap_program_get_default_config(prog_offs);
-
-    // 设置out指令连接的pin
-    sm_config_set_out_pins(&c, pin_tms, 1);
-
-    //设置side_set指令连接的pin
-    sm_config_set_sideset_pins(&c, pin_tck);
-
-    //(shift to left, auto push/pull, threshold=nbits)
-    sm_config_set_out_shift(&c, true, false, 32);
-
-    //设置输出电平为0
-    pio_sm_set_pins_with_mask(pio, sm, 0,
-                            (1u << pin_tck) | (1u << pin_tms));
-
-    //设置 tck tms 作为输出
-    pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_tck) | (1u << pin_tms),
-                            (1u << pin_tck) | (1u << pin_tms));
-
-    pio_gpio_init(pio, pin_tck);
-    pio_gpio_init(pio, pin_tms);
-
-    pio_sm_init(pio, sm, prog_offs, &c);
-}
-%}
+    ;获取数据
+    pull
+bitloops:
+    out pins, 1 side 0 [1] ; Stall here on empty (sideset proceeds even if
+    in pins, 1  side 1     ; instruction stalls, so we stall with SCK low)
+    jmp x-- bitloops
+    mov x, x    side 0      ;保持空闲时候为低电平
+    push

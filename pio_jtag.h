@@ -40,6 +40,7 @@ extern pio_jtag_inst_t *pio_jtag;
 
 void jtag_init(pio_jtag_inst_t *jtag, uint freq);
 void JTAG_TAP_Control(uint8_t chCTRStream,uint8_t chLength);
+void JTAG_Shift_Data(uint32_t *pchOutBuffer, uint32_t *pchInBuffer, uint16_t wLength);
 
 #define JTAG_TAP_TEST_LOGIC_RESET              JTAG_TAP_Control(0x1F,6);
 #define JTAG_TAP_SHIFT_IR                      JTAG_TAP_Control(0x03,4);
