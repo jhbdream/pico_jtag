@@ -8,29 +8,15 @@
 #include "tusb.h"
 #include "led.h"
 
-#ifndef LED_PIN
-#define LED_PIN0 16
-#define LED_PIN1 17
-#define LED_PIN2 18
-#define LED_PIN LED_PIN0
-#endif
+//--------------------------------------------------------------------+
+// MACRO CONSTANT TYPEDEF PROTYPES
+//--------------------------------------------------------------------+
 
-static uint32_t blink_interval_ms = 1000;
+uint32_t blink_interval_ms = BLINK_INIT;
 
-void led_blinking_init(void)
+void set_blink_state(uint32_t mode)
 {
-    gpio_init(LED_PIN0);
-    gpio_init(LED_PIN1);
-    gpio_init(LED_PIN2);
-
-    gpio_set_dir(LED_PIN0, 1);
-    gpio_put(LED_PIN0, 0);
-
-    gpio_set_dir(LED_PIN1, 1);
-    gpio_put(LED_PIN1, 0);
-
-    gpio_set_dir(LED_PIN2, 1);
-    gpio_put(LED_PIN2, 0);
+  blink_interval_ms = mode;
 }
 
 //--------------------------------------------------------------------+
@@ -38,14 +24,16 @@ void led_blinking_init(void)
 //--------------------------------------------------------------------+
 void led_blinking_task(void)
 {
-    static uint32_t start_ms = 0;
-    static bool led_state = false;
+  static uint32_t start_ms = 0;
+  static bool led_state = false;
 
-    // Blink every interval ms
-    if (board_millis() - start_ms < blink_interval_ms)
-        return; // not enough time
+  // blink is disabled
+  if (!blink_interval_ms) return;
 
-    start_ms += blink_interval_ms;
-    gpio_put(LED_PIN, led_state);
-    led_state = 1 - led_state; // toggle
+  // Blink every interval ms
+  if ( board_millis() - start_ms < blink_interval_ms) return; // not enough time
+  start_ms += blink_interval_ms;
+
+  board_led_write(led_state);
+  led_state = 1 - led_state; // toggle
 }
