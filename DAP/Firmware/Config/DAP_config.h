@@ -331,8 +331,8 @@ __STATIC_INLINE void PORT_JTAG_SETUP (void) {
   gpio_init(PICO_NRST_PIN);
 
   gpio_set_dir(PICO_TCK_PIN, GPIO_OUT);
-  gpio_set_dir(PICO_TDI_PIN, GPIO_IN);
-  gpio_set_dir(PICO_TDO_PIN, GPIO_OUT);
+  gpio_set_dir(PICO_TDI_PIN, GPIO_OUT);
+  gpio_set_dir(PICO_TDO_PIN, GPIO_IN);
   gpio_set_dir(PICO_TMS_PIN, GPIO_OUT);
   gpio_set_dir(PICO_TRST_PIN, GPIO_OUT);
   gpio_set_dir(PICO_NRST_PIN, GPIO_OUT);
@@ -449,7 +449,7 @@ __STATIC_FORCEINLINE uint32_t PIN_TDI_IN  (void) {
 \param bit Output value for the TDI DAP hardware I/O pin.
 */
 __STATIC_FORCEINLINE void     PIN_TDI_OUT (uint32_t bit) {
-    gpio_set_mask(bit << PICO_TMS_PIN);
+    gpio_put(PICO_TDI_PIN, bit);
 }
 
 
