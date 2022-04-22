@@ -449,7 +449,7 @@ __STATIC_FORCEINLINE uint32_t PIN_TDI_IN  (void) {
 \param bit Output value for the TDI DAP hardware I/O pin.
 */
 __STATIC_FORCEINLINE void     PIN_TDI_OUT (uint32_t bit) {
-    gpio_put(PICO_TDI_PIN, bit);
+    gpio_put(PICO_TDI_PIN, bit & 0x01);
 }
 
 
@@ -479,8 +479,7 @@ __STATIC_FORCEINLINE uint32_t PIN_nTRST_IN   (void) {
            - 1: release JTAG TRST Test Reset.
 */
 __STATIC_FORCEINLINE void     PIN_nTRST_OUT  (uint32_t bit) {
-      gpio_set_mask(bit << PICO_TRST_PIN);
-
+        gpio_put(PICO_TRST_PIN, bit & 0x01);
 }
 
 // nRESET Pin I/O------------------------------------------
@@ -499,8 +498,7 @@ __STATIC_FORCEINLINE uint32_t PIN_nRESET_IN  (void) {
            - 1: release device hardware reset.
 */
 __STATIC_FORCEINLINE void     PIN_nRESET_OUT (uint32_t bit) {
-        gpio_set_mask(bit << PICO_NRST_PIN);
-
+              gpio_put(PICO_NRST_PIN, bit & 0x01);
 }
 
 ///@}
@@ -561,12 +559,10 @@ The value of the Test Domain Timer in the Debug Unit is returned by the function
 default, the DWT timer is used.  The frequency of this timer is configured with \ref TIMESTAMP_CLOCK.
 
 */
-
 /** Get timestamp of Test Domain Timer.
 \return Current timestamp value.
 */
 __STATIC_INLINE uint32_t TIMESTAMP_GET (void) {
-  //return (DWT->CYCCNT);
   return 0;
 }
 

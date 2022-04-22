@@ -36,6 +36,7 @@ target_link_libraries(jtag PRIVATE
   hardware_pio
   tinyusb_device
   tinyusb_board
+  pico_time
 )
 
 pico_generate_pio_header(jtag ${CMAKE_CURRENT_LIST_DIR}/jtag.pio)

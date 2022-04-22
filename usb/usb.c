@@ -42,15 +42,19 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
         return;
     }
 
+    memset(TxDataBuffer, 0, sizeof(TxDataBuffer));
+
     DAP_ProcessCommand(RxDataBuffer, TxDataBuffer);
 
     tud_hid_report(0, TxDataBuffer, response_size);
 
+#if 0
     printf("recv: [%d]\n", bufsize);
     for (int i = 0; i < bufsize; i++)
     {
         printf("%02x ", RxDataBuffer[i]);
     }
     printf("\n");
+#endif
 
 }
