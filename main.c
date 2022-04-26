@@ -6,13 +6,33 @@
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 
-#include "bsp/board.h"
-#include "tusb.h"
-#include "led.h"
 #include "pio_jtag.h"
 
-#include <usb_descriptors.h>
+#include <stdio.h>
+
+// Pico
+#include "pico/stdlib.h"
+
+// For memcpy
+#include <string.h>
+
+// Include descriptor struct definitions
+#include "usb_common.h"
+// USB register definitions from pico-sdk
+#include "hardware/regs/usb.h"
+// USB hardware struct definitions from pico-sdk
+#include "hardware/structs/usb.h"
+// For interrupt enable and numbers
+#include "hardware/irq.h"
+// For resetting the USB controller
+#include "hardware/resets.h"
+#include "hardware/gpio.h"
+
+// Device descriptors
+#include "dev_lowlevel.h"
+
 #include <DAP.h>
+#include <DAP_config.h>
 
 void board_jtag_init(void)
 {
@@ -35,15 +55,42 @@ void board_uart_init(void)
     stdio_uart_init();
 }
 
+extern volatile bool configured;
+extern volatile uint8_t recv_flag;
+extern uint8_t dap_requset_buf[DAP_PACKET_SIZE];
+extern uint8_t dap_response_buf[DAP_PACKET_SIZE];
+
 int main()
 {
-    board_init();
-    tusb_init();
+    uint16_t resp_size;
+
+    board_uart_init();
     stdio_uart_init();
+    printf("USB Device Low-Level hardware\n");
+
+    gpio_init(19);
+    gpio_set_dir(19, GPIO_OUT);
+
+    usb_device_init();
+    // Wait until configured
+    while (!configured)
+    {
+        tight_loop_contents();
+    }
+
+    // Get ready to rx from host
+    usb_start_transfer(usb_get_endpoint_configuration(EP1_OUT_ADDR), NULL, 64);
 
     while (1)
     {
-        led_blinking_task();
-        tud_task(); // tinyusb device task
+        if(recv_flag == 1)
+        {
+            resp_size = (uint16_t)DAP_ProcessCommand(dap_requset_buf, dap_response_buf);
+            recv_flag = 0;
+
+            // send response
+            struct usb_endpoint_configuration *ep = usb_get_endpoint_configuration(EP2_IN_ADDR);
+            usb_start_transfer(ep, dap_response_buf, resp_size);
+        }
     }
 }

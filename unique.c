@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include "pico/stdlib.h"
 #include "pico/unique_id.h"
-#include "tusb.h"
 
 uint8_t get_unique_id(uint16_t *desc_str)
 {

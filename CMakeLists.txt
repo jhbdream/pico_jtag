@@ -8,7 +8,6 @@ pico_sdk_init()
 
 add_executable(jtag
   main.c
-  led.c
   pio_jtag.c
   unique.c
 
@@ -16,8 +15,7 @@ add_executable(jtag
   DAP/Firmware/Source/DAP.c
   DAP/Firmware/Source/JTAG_DP.c
   DAP/Firmware/Source/SW_DP.c
-  usb/usb_descriptors.c
-  usb/usb.c
+  usb/dev_lowlevel.c
 )
 
 target_include_directories(jtag PRIVATE
@@ -34,8 +32,6 @@ target_link_libraries(jtag PRIVATE
   hardware_gpio
   pico_unique_id
   hardware_pio
-  tinyusb_device
-  tinyusb_board
   pico_time
 )
 

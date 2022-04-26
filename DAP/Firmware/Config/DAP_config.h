@@ -98,7 +98,7 @@ This information includes:
 /// This configuration settings is used to optimize the communication performance with the
 /// debugger and depends on the USB peripheral. For devices with limited RAM or USB buffer the
 /// setting can be reduced (valid range is 1 .. 255).
-#define DAP_PACKET_COUNT        8U              ///< Specifies number of packets buffered.
+#define DAP_PACKET_COUNT        1U              ///< Specifies number of packets buffered.
 
 /// Indicate that UART Serial Wire Output (SWO) trace is available.
 /// This information is returned by the command \ref DAP_Info as part of <b>Capabilities</b>.
@@ -523,13 +523,9 @@ It is recommended to provide the following LEDs for status indication:
            - 0: Connect LED OFF: debugger is not connected to CMSIS-DAP Debug Unit.
 */
 
-#include <led.h>
 __STATIC_INLINE void LED_CONNECTED_OUT (uint32_t bit)
 {
-  if(bit)
-  {
-    set_blink_state(BLINK_CONNET);
-  }
+
 }
 
 /** Debug Unit: Set status Target Running LED.
@@ -539,10 +535,7 @@ __STATIC_INLINE void LED_CONNECTED_OUT (uint32_t bit)
 */
 __STATIC_INLINE void LED_RUNNING_OUT (uint32_t bit)
 {
-  if(bit)
-  {
-    set_blink_state(BLINK_RUNNING);
-  }
+
 }
 
 ///@}

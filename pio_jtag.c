@@ -4,7 +4,6 @@
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
 #include "pio_jtag.h"
-#include "bsp/board.h"
 
 pio_jtag_inst_t jtag = DECLEAR_PIO_JTAG(JTAG_PIO, JTAG_SM, PIN_TDI, PIN_TDO, PIN_TCK, PIN_TMS);
 
