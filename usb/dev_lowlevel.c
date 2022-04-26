@@ -600,27 +600,29 @@ void ep0_out_handler(uint8_t *buf, uint16_t len)
 
 #include <DAP_config.h>
 
-uint8_t dap_requset_buf[DAP_PACKET_SIZE];
-uint8_t dap_response_buf[DAP_PACKET_SIZE];
+static volatile uint16_t USB_RequestIndexI;     // Request  Index In
+static volatile uint16_t USB_RequestIndexO;     // Request  Index Out
+static volatile uint16_t USB_RequestCountI;     // Request  Count In
+static volatile uint16_t USB_RequestCountO;     // Request  Count Out
+static volatile uint8_t  USB_RequestIdle;       // Request  Idle  Flag
 
-volatile uint8_t recv_flag = 0;
+static volatile uint16_t USB_ResponseIndexI;    // Response Index In
+static volatile uint16_t USB_ResponseIndexO;    // Response Index Out
+static volatile uint16_t USB_ResponseCountI;    // Response Count In
+static volatile uint16_t USB_ResponseCountO;    // Response Count Out
+static volatile uint8_t  USB_ResponseIdle;      // Response Idle  Flag
+
+static uint8_t  USB_Request [DAP_PACKET_COUNT][DAP_PACKET_SIZE];  // Request  Buffer
+static uint8_t  USB_Response[DAP_PACKET_COUNT][DAP_PACKET_SIZE];  // Response Buffer
+static uint16_t USB_RespSize[DAP_PACKET_COUNT];                                                           // Response Size
 
 // Device specific functions
-void ep1_out_handler(uint8_t *buf, uint16_t len) {
-    //printf("RX %d bytes from host\n", len);
-    // Send data back to host
-    memcpy(dap_requset_buf, buf, len);
-    recv_flag = 1;
-
-    //uint16_t resp_size = (uint16_t)DAP_ProcessCommand(buf, dap_response_buf);
-    //struct usb_endpoint_configuration *ep = usb_get_endpoint_configuration(EP2_IN_ADDR);
-    //usb_start_transfer(ep, dap_response_buf, resp_size);
-    //gpio_put(19, 1);
+void ep1_out_handler(uint8_t *buf, uint16_t len)
+{
+    printf("RX %d bytes from host\n", len);
 }
 
-void ep2_in_handler(uint8_t *buf, uint16_t len) {
-    //printf("Sent %d bytes to host\n", len);
-    // Get ready to rx again from host
-    usb_start_transfer(usb_get_endpoint_configuration(EP1_OUT_ADDR), NULL, 64);
-    //gpio_put(19, 0);
+void ep2_in_handler(uint8_t *buf, uint16_t len)
+{
+    printf("Sent %d bytes to host\n", len);
 }

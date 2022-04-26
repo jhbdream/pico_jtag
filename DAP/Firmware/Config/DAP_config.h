@@ -260,9 +260,7 @@ __STATIC_INLINE uint8_t DAP_GetTargetBoardNameString (char *str) {
 */
 __STATIC_INLINE uint8_t DAP_GetProductFirmwareVersionString (char *str) {
   (void)str;
-  char *fw_ver = "jhb_dap";
-  strcpy(str, fw_ver);
-  return (strlen(str));
+  return (0U);
 }
 
 ///@}

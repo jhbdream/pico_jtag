@@ -56,9 +56,10 @@ void board_uart_init(void)
 }
 
 extern volatile bool configured;
-extern volatile uint8_t recv_flag;
-extern uint8_t dap_requset_buf[DAP_PACKET_SIZE];
-extern uint8_t dap_response_buf[DAP_PACKET_SIZE];
+
+extern void usb_device_init();
+extern void usb_start_transfer(struct usb_endpoint_configuration *ep, uint8_t *buf, uint16_t len);
+extern struct usb_endpoint_configuration *usb_get_endpoint_configuration(uint8_t addr);
 
 int main()
 {
@@ -83,14 +84,6 @@ int main()
 
     while (1)
     {
-        if(recv_flag == 1)
-        {
-            resp_size = (uint16_t)DAP_ProcessCommand(dap_requset_buf, dap_response_buf);
-            recv_flag = 0;
 
-            // send response
-            struct usb_endpoint_configuration *ep = usb_get_endpoint_configuration(EP2_IN_ADDR);
-            usb_start_transfer(ep, dap_response_buf, resp_size);
-        }
     }
 }
