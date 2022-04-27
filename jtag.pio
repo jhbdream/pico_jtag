@@ -1,22 +1,26 @@
-;jtag 模式线状态机
+;jtag 模式线 状态机
 .program jtag_tap
 .side_set 1 opt
 
-    ;获取长度
+start:
+    ;获取长度 保存到寄存器x
     pull
     mov x, osr
 
-    ;获取数据
+    ;获取数据内容
     pull
+
+    jmp !x start
 
 bitloops:
     out pins, 1         side 0  [1]
     jmp x-- bitloops    side 1  [1]
-    out pins, 1         side 0  [1]
+
+    out pins, 1         side 1
     push
 
 .program jtag_date
-.side_set 2 opt
+.side_set 1 opt
     ;获取长度
     pull
     mov x, osr
@@ -24,12 +28,8 @@ bitloops:
     ;获取数据
     pull
 bitloops:
-    out pins, 1 side 0 [1] ; Stall here on empty (sideset proceeds even if
-    in pins, 1  side 1     ; instruction stalls, so we stall with SCK low)
+    out pins, 1 side 0 [6]
+    in pins, 1  side 1 [4]
     jmp x-- bitloops
 
-    out pins, 1 side 2 [1] ; 设置tms 退出shift状态
-    in pins, 1  side 3 [1]
-
-    mov x, x    side 0      ;保持空闲时候为低电平
     push

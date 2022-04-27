@@ -29,12 +29,19 @@ extern pio_jtag_inst_t *pio_jtag;
 #define JTAG_PIO (pio0)
 #define JTAG_SM (0)
 
+#if 0
+#define PICO_TCK_PIN 16
+#define PICO_TDI_PIN 17
+#define PICO_TDO_PIN 18
+#define PICO_TMS_PIN 19
+#endif
+
 #define PIN_TRST 22
-#define PIN_TDI 21
-#define PIN_TMS 20
-#define PIN_TCK 19
-/* 需要飞线 */
-#define PIN_TDO 26
+
+#define PIN_TDI 17
+#define PIN_TMS 19
+#define PIN_TCK 16
+#define PIN_TDO 18
 
 #define JTAG_FREQ (1000000)
 
@@ -43,10 +50,8 @@ void JTAG_TAP_Control(uint8_t chCTRStream,uint8_t chLength);
 void JTAG_Shift_Data(uint32_t *pchOutBuffer, uint32_t *pchInBuffer, uint16_t wLength);
 uint32_t JTAG_Read_Device_Identification(void);
 
-#define JTAG_TAP_TEST_LOGIC_RESET              JTAG_TAP_Control(0x1F,6);
-#define JTAG_TAP_SHIFT_IR                      JTAG_TAP_Control(0x03,4);
-#define JTAG_TAP_RETURN_RUN_TEST_IDEL          JTAG_TAP_Control(0x01,2);
-#define JTAG_TAP_ENTER_SHIFT_DR_FROM_SHIFT_IR  JTAG_TAP_Control(0x03,4);
-#define JTAG_TAP_SHIFT_DR                      JTAG_TAP_Control(0x01,3);
+#define JTAG_TAP_TEST_LOGIC_RESET              JTAG_TAP_Control(0x3F,5);
+#define JTAG_TAP_SHIFT_IR                      JTAG_TAP_Control(0x06,5);
+#define JTAG_TAP_SHIFT_DR                      JTAG_TAP_Control(0x02,4);
 
 #endif

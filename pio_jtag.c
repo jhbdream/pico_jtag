@@ -20,10 +20,10 @@ static inline void pio_jtag_tap_init(PIO pio, uint sm, uint pin_tck, uint pin_tm
 
     sm_config_set_out_shift(&c, true, false, 32);
 
-    pio_sm_set_pins_with_mask(pio, sm, 0,
+    pio_sm_set_pins_with_mask(pio, sm,  (1u << pin_tck) | (1u << pin_tms),
                             (1u << pin_tck) | (1u << pin_tms));
 
-    pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_tck) | (1u << pin_tms),
+    pio_sm_set_pindirs_with_mask(pio, sm,  (1u << pin_tck) | (1u << pin_tms),
                             (1u << pin_tck) | (1u << pin_tms));
 
     pio_gpio_init(pio, pin_tck);
@@ -32,7 +32,7 @@ static inline void pio_jtag_tap_init(PIO pio, uint sm, uint pin_tck, uint pin_tm
     pio_sm_init(pio, sm, prog_offs, &c);
 }
 
-static inline void pio_jtag_date_init(PIO pio, uint sm, uint pin_tck, uint pin_tms, uint pin_tdi, uint pin_tdo)
+static inline void pio_jtag_date_init(PIO pio, uint sm, uint pin_tck, uint pin_tdi, uint pin_tdo)
 {
     uint prog_offs = pio_add_program(pio, &jtag_date_program);
     pio_sm_config c = jtag_date_program_get_default_config(prog_offs);
@@ -44,11 +44,11 @@ static inline void pio_jtag_date_init(PIO pio, uint sm, uint pin_tck, uint pin_t
     sm_config_set_out_shift(&c, true, false, 32);
     sm_config_set_in_shift(&c, true, false, 32);
 
-    pio_sm_set_pins_with_mask(pio, sm, 0,
+    pio_sm_set_pins_with_mask(pio, sm, (1u << pin_tck) | (1u << pin_tdi),
                          (1u << pin_tck) | (1u << pin_tdi));
 
-    pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_tck) | (1u << pin_tdi) | (1u << pin_tms),
-                         (1u << pin_tck) | (1u << pin_tdi) | (1u << pin_tms) | (1u << pin_tdo));
+    pio_sm_set_pindirs_with_mask(pio, sm, (1u << pin_tck) | (1u << pin_tdi), (1u << pin_tck) | (1u << pin_tdi));
+    pio_sm_set_pindirs_with_mask(pio, sm, 0, (1u << pin_tdo));
 
     pio_gpio_init(pio, pin_tck);
     pio_gpio_init(pio, pin_tdi);
@@ -81,7 +81,7 @@ void jtag_init(pio_jtag_inst_t *jtag, uint freq)
     pio_set_freq(pio0, 0, 40000000);
     pio_sm_set_enabled(pio0, 0, true);
 
-    pio_jtag_date_init(pio0, 1, PIN_TCK, PIN_TMS, PIN_TDI, PIN_TDO);
+    pio_jtag_date_init(pio0, 1, PIN_TCK, PIN_TDI, PIN_TDO);
     pio_set_freq(pio0, 1, 40000000);
     pio_sm_set_enabled(pio0, 1, true);
 }
@@ -107,6 +107,13 @@ void JTAG_TAP_Control(uint8_t chCTRStream,uint8_t chLength)
     pio_sm_get_blocking(pio0, 0);
 }
 
+void LONG_JTAG_TAP_Control(uint32_t tap, uint8_t length)
+{
+    pio_sm_put_blocking(pio0, 0, length - 1);
+    pio_sm_put_blocking(pio0, 0, tap);
+    pio_sm_get_blocking(pio0, 0);
+}
+
 void JTAG_Shift_Data(uint32_t *pchOutBuffer, uint32_t *pchInBuffer, uint16_t wLength)
 {
 
@@ -117,7 +124,7 @@ void JTAG_Shift_Data(uint32_t *pchOutBuffer, uint32_t *pchInBuffer, uint16_t wLe
         tmp = *pchOutBuffer;
     }
 
-    pio_sm_put_blocking(pio0, 1, wLength - 1 - 1);
+    pio_sm_put_blocking(pio0, 1, wLength - 1);
     pio_sm_put_blocking(pio0, 1, tmp);
 
     tmp = pio_sm_get_blocking(pio0, 1);
@@ -137,23 +144,23 @@ void JTAG_Shift_Data(uint32_t *pchOutBuffer, uint32_t *pchInBuffer, uint16_t wLe
 ***********************************************************/
 uint32_t JTAG_Read_Device_Identification(void)
 {
-    uint32_t dwTempData = 0;
+    uint32_t dwTempData = 0x12345678;
     JTAG_TAP_TEST_LOGIC_RESET;
 
     JTAG_TAP_SHIFT_IR
     {
-        uint32_t chTempData = OPCODE_IDCODE;
-        JTAG_Shift_Data(&chTempData,NULL,4);
+        uint32_t chTempData = 0x01;
+        JTAG_Shift_Data(&chTempData, NULL, 4);
     }
 
-    JTAG_TAP_RETURN_RUN_TEST_IDEL
+    JTAG_TAP_TEST_LOGIC_RESET
 
     JTAG_TAP_SHIFT_DR
     {
         JTAG_Shift_Data((uint32_t *)&dwTempData,(uint32_t *)&dwTempData,32);
     }
 
-    JTAG_TAP_RETURN_RUN_TEST_IDEL
+    JTAG_TAP_TEST_LOGIC_RESET
 
     return dwTempData;
 }
