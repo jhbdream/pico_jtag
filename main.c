@@ -61,6 +61,9 @@ extern void usb_device_init();
 extern void usb_start_transfer(struct usb_endpoint_configuration *ep, uint8_t *buf, uint16_t len);
 extern struct usb_endpoint_configuration *usb_get_endpoint_configuration(uint8_t addr);
 
+extern void DAP_Init(void);
+extern void DAP_Thread(void);
+
 int main()
 {
     uint16_t resp_size;
@@ -72,7 +75,10 @@ int main()
     gpio_init(19);
     gpio_set_dir(19, GPIO_OUT);
 
+    DAP_Init();
+
     usb_device_init();
+
     // Wait until configured
     while (!configured)
     {
@@ -84,6 +90,6 @@ int main()
 
     while (1)
     {
-
+        DAP_Thread();
     }
 }

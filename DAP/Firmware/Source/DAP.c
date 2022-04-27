@@ -59,6 +59,7 @@ volatile uint8_t    DAP_TransferAbort;  // Transfer Abort Flag
 
 static const char DAP_FW_Ver [] = DAP_FW_VER;
 
+extern uint16_t USB_Packsize;
 
 
 // Get DAP Information
@@ -109,6 +110,7 @@ static uint8_t DAP_Info(uint8_t id, uint8_t *info) {
 
       info[1] = ((DAP_UART_USB_COM_PORT != 0) ? (1U << 0) : 0U);
       length = 2U;
+
       break;
     case DAP_ID_TIMESTAMP_CLOCK:
 #if (TIMESTAMP_CLOCK != 0U)
@@ -150,6 +152,9 @@ static uint8_t DAP_Info(uint8_t id, uint8_t *info) {
       info[0] = (uint8_t)(DAP_PACKET_SIZE >> 0);
       info[1] = (uint8_t)(DAP_PACKET_SIZE >> 8);
       length = 2U;
+
+      USB_Packsize = DAP_PACKET_SIZE;
+
       break;
     case DAP_ID_PACKET_COUNT:
       info[0] = DAP_PACKET_COUNT;

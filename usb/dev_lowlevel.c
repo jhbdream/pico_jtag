@@ -448,8 +448,14 @@ void usb_handle_setup_packet(void)
                 break;
 
             case USB_DT_STRING:
+                /* cmsis dap open call */
                 usb_handle_string_descriptor(pkt);
                 printf("GET STRING DESCRIPTOR\r\n");
+
+                extern uint16_t USB_Packsize;
+                // init when dap open
+                USB_Packsize = 64;
+
                 break;
 
             default:
@@ -599,6 +605,7 @@ void ep0_out_handler(uint8_t *buf, uint16_t len)
 }
 
 #include <DAP_config.h>
+#include <DAP.h>
 
 static volatile uint16_t USB_RequestIndexI;     // Request  Index In
 static volatile uint16_t USB_RequestIndexO;     // Request  Index Out
@@ -612,17 +619,113 @@ static volatile uint16_t USB_ResponseCountI;    // Response Count In
 static volatile uint16_t USB_ResponseCountO;    // Response Count Out
 static volatile uint8_t  USB_ResponseIdle;      // Response Idle  Flag
 
-static uint8_t  USB_Request [DAP_PACKET_COUNT][DAP_PACKET_SIZE];  // Request  Buffer
-static uint8_t  USB_Response[DAP_PACKET_COUNT][DAP_PACKET_SIZE];  // Response Buffer
-static uint16_t USB_RespSize[DAP_PACKET_COUNT];                                                           // Response Size
+static uint8_t  USB_Request [DAP_PACKET_SIZE];  // Request  Buffer
+static uint8_t  USB_Response[DAP_PACKET_SIZE];  // Response Buffer
+uint16_t USB_RespSize;                                                           // Response Size
+uint16_t USB_Packsize;
+
+extern volatile uint8_t    DAP_TransferAbort;
 
 // Device specific functions
 void ep1_out_handler(uint8_t *buf, uint16_t len)
 {
-    printf("RX %d bytes from host\n", len);
+    //printf("RX %d bytes from host\n", len);
+
+    memcpy(&USB_Request[USB_RequestIndexI], buf, len);
+    USB_RequestIndexI += len;
+
+    if(USB_RequestIndexI >= DAP_PACKET_SIZE || len < 64)
+    {
+        USB_RequestIndexI = 0;
+        USB_RequestIdle = 0;
+    }
+    else
+    {
+        usb_start_transfer(usb_get_endpoint_configuration(EP1_OUT_ADDR), NULL, 64);
+    }
 }
 
 void ep2_in_handler(uint8_t *buf, uint16_t len)
 {
-    printf("Sent %d bytes to host\n", len);
+    //printf("Sent %d bytes to host\n", len);
+    //printf("USB_RespSize: %d\n", USB_RespSize);
+
+    struct usb_endpoint_configuration *ep = usb_get_endpoint_configuration(EP2_IN_ADDR);
+    if(USB_RespSize > 64)
+    {
+        usb_start_transfer(ep, (uint8_t *)&USB_Response[USB_ResponseIndexI], 64);
+        USB_RespSize -= 64;
+        USB_ResponseIndexI += 64;
+    }
+    else if(USB_RespSize > 0)
+    {
+        usb_start_transfer(ep, (uint8_t *)&USB_Response[USB_ResponseIndexI], USB_RespSize);
+        USB_RespSize -= USB_RespSize;
+        USB_ResponseIndexI += USB_RespSize;
+    }
+    else if(USB_RespSize == 0)
+    {
+
+    }
+}
+
+void DAP_Init(void)
+{
+  // Initialize variables
+  USB_RequestIndexI  = 0U;
+  USB_RequestIndexO  = 0U;
+  USB_RequestCountI  = 0U;
+  USB_RequestCountO  = 0U;
+  USB_RequestIdle    = 1U;
+
+  USB_ResponseIndexI = 0U;
+  USB_ResponseIndexO = 0U;
+  USB_ResponseCountI = 0U;
+  USB_ResponseCountO = 0U;
+  USB_ResponseIdle   = 1U;
+
+  USB_Packsize = (uint16_t)64;
+}
+
+
+void DAP_Thread(void)
+{
+    // 接收到一包数据
+    if(USB_RequestIdle == 0)
+    {
+        //USB_RespSize = USB_Packsize;
+
+        // 处理完成一包数据
+        USB_RespSize = (uint16_t)DAP_ProcessCommand(USB_Request, USB_Response);
+
+#if 0
+        //为了让接收端检测到接收完成
+        if(USB_RespSize % 64 == 0)
+        {
+            if(USB_RespSize != 64 && USB_RespSize != DAP_PACKET_SIZE)
+            {
+                USB_RespSize = USB_RespSize + 1;
+            }
+        }
+        printf("FIX USB_RespSize: %d\n", USB_RespSize);
+#endif
+
+        USB_ResponseIndexI = 0;
+        struct usb_endpoint_configuration *ep = usb_get_endpoint_configuration(EP2_IN_ADDR);
+        if(USB_RespSize > 64)
+        {
+            usb_start_transfer(ep, (uint8_t *)&USB_Response[USB_ResponseIndexI], 64);
+            USB_RespSize -= 64;
+            USB_ResponseIndexI += 64;
+        }
+        else if(USB_RespSize > 0)
+        {
+            usb_start_transfer(ep, (uint8_t *)&USB_Response[USB_ResponseIndexI], USB_RespSize);
+            USB_RespSize -= USB_RespSize;
+            USB_ResponseIndexI += USB_RespSize;
+        }
+
+        usb_start_transfer(usb_get_endpoint_configuration(EP1_OUT_ADDR), NULL, 64);
+        USB_RequestIdle = 1;
+    }
 }
