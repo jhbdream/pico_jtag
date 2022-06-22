@@ -3,14 +3,14 @@ include(pico_sdk_import.cmake)
 project(jtag_project C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 pico_sdk_init()
 
 add_executable(jtag
   main.c
-  pio_jtag.c
   unique.c
-
+  dap_jtag_pio.c
   DAP/Firmware/Source/DAP_vendor.c
   DAP/Firmware/Source/DAP.c
   DAP/Firmware/Source/JTAG_DP.c
@@ -35,7 +35,8 @@ target_link_libraries(jtag PRIVATE
   pico_time
 )
 
-pico_generate_pio_header(jtag ${CMAKE_CURRENT_LIST_DIR}/jtag.pio)
+#pico_generate_pio_header(jtag ${CMAKE_CURRENT_LIST_DIR}/jtag.pio)
+pico_generate_pio_header(jtag ${CMAKE_CURRENT_LIST_DIR}/dap_jtag.pio)
 
 pico_add_extra_outputs(jtag)
 

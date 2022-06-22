@@ -57,7 +57,7 @@ This information includes:
 
 /// Processor Clock of the Cortex-M MCU used in the Debug Unit.
 /// This value is used to calculate the SWD/JTAG clock speed.
-#define CPU_CLOCK               100000000U      ///< Specifies the CPU Clock in Hz.
+#define CPU_CLOCK               125000000U      ///< Specifies the CPU Clock in Hz.
 
 /// Number of processor cycles for I/O Port write operations.
 /// This value is used to calculate the SWD/JTAG clock speed that is generated with I/O
@@ -77,7 +77,7 @@ This information includes:
 
 /// Configure maximum number of JTAG devices on the scan chain connected to the Debug Access Port.
 /// This setting impacts the RAM requirements of the Debug Unit. Valid range is 1 .. 255.
-#define DAP_JTAG_DEV_CNT        8U              ///< Maximum number of JTAG devices on scan chain.
+#define DAP_JTAG_DEV_CNT        1U              ///< Maximum number of JTAG devices on scan chain.
 
 /// Default communication mode on the Debug Access Port.
 /// Used for the command \ref DAP_Connect when Port Default mode is selected.
@@ -310,6 +310,9 @@ of the same I/O port. The following SWDIO I/O Pin functions are provided:
 #define PICO_TDO_PIN 18
 #define PICO_TMS_PIN 20
 
+#define PICO_JTAG_CONNECT_LED 10
+#define PICO_JTAG_RUN_LED 11
+
 /** Setup JTAG I/O pins: TCK, TMS, TDI, TDO, nTRST, and nRESET.
 Configures the DAP Hardware I/O pins for JTAG mode:
  - TCK, TMS, TDI, nTRST, nRESET to output mode and set to high level.
@@ -513,7 +516,10 @@ It is recommended to provide the following LEDs for status indication:
 
 __STATIC_INLINE void LED_CONNECTED_OUT (uint32_t bit)
 {
-
+	if(bit)
+		gpio_clr_mask(1 << PICO_JTAG_CONNECT_LED);
+	else
+		gpio_set_mask(1 << PICO_JTAG_CONNECT_LED);
 }
 
 /** Debug Unit: Set status Target Running LED.
@@ -523,7 +529,10 @@ __STATIC_INLINE void LED_CONNECTED_OUT (uint32_t bit)
 */
 __STATIC_INLINE void LED_RUNNING_OUT (uint32_t bit)
 {
-
+	if(bit)
+		gpio_clr_mask(1 << PICO_JTAG_RUN_LED);
+	else
+		gpio_set_mask(1 << PICO_JTAG_RUN_LED);
 }
 
 ///@}
@@ -568,7 +577,13 @@ Status LEDs. In detail the operation of Hardware I/O and LED pins are enabled an
  - LED output pins are enabled and LEDs are turned off.
 */
 __STATIC_INLINE void DAP_SETUP (void) {
-  ;
+  gpio_init(PICO_JTAG_RUN_LED);
+  gpio_set_dir(PICO_JTAG_RUN_LED, GPIO_OUT);
+  gpio_set_mask(1 << PICO_JTAG_RUN_LED);
+  
+  gpio_init(PICO_JTAG_CONNECT_LED);
+  gpio_set_dir(PICO_JTAG_CONNECT_LED, GPIO_OUT);
+  gpio_set_mask(1 << PICO_JTAG_CONNECT_LED);
 }
 
 /** Reset Target Device with custom specific I/O pin or command sequence.

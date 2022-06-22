@@ -1,0 +1,36 @@
+.program dap_jtag
+.side_set 2
+
+; TMS TCK is side-set pin
+; TDI is out pin
+; TDO is in pin
+; sequence : info + data
+; bit[5:0] number of tck cycles 1 ... 64 (64 encoded as 0)
+; bit[6] tms value
+; bit[7] tdo capture
+
+public entry_point:
+	pull		side 0b01	; load 32bit word from tx fifo into osr
+	out x, 6	side 0b01	; shift out count to x
+	out y, 1	side 0b01	; shift out tms to y
+	
+	out NULL, 1	side 0b01	; shift out tms to y
+	
+	jmp !y fetch_tdi_l side 0b01
+
+tms_high:
+	out pins, 1	side 0b10
+	in  pins, 1 side 0b11
+	jmp x-- tms_high side 0b11
+	jmp entry_point side 0b11
+
+fetch_tdi_l:
+	pull		side 0b01
+tms_low:
+	pull		side 0b01
+	out pins, 1 side 0b00
+	in pins,  1 side 0b01
+	jmp !OSRE fetch_tdi_l side 0b11
+	jmp x-- tms_low side 0b01
+	jmp entry_point side 0b01
+
