@@ -64,6 +64,12 @@ extern struct usb_endpoint_configuration *usb_get_endpoint_configuration(uint8_t
 extern void DAP_Init(void);
 extern void DAP_Thread(void);
 
+#define LED1 16
+#define LED2 17
+#define LED3 18
+
+#define OE 22
+
 int main()
 {
     uint16_t resp_size;
@@ -72,8 +78,20 @@ int main()
     stdio_uart_init();
     printf("USB Device Low-Level hardware\n");
 
-    gpio_init(19);
-    gpio_set_dir(19, GPIO_OUT);
+    gpio_init(LED1);
+    gpio_set_dir(LED1, GPIO_OUT);
+
+    gpio_init(LED2);
+    gpio_set_dir(LED2, GPIO_OUT);
+
+    gpio_init(LED1);
+    gpio_set_dir(LED2, GPIO_OUT);
+
+    gpio_clr_mask((1 << LED1) | (1 << LED2) | (1 <<LED3));
+
+    gpio_init(OE);
+    gpio_set_dir(OE, GPIO_OUT);
+    gpio_set_mask(1 << OE);
 
     DAP_Init();
 

@@ -305,14 +305,10 @@ of the same I/O port. The following SWDIO I/O Pin functions are provided:
 // Configure DAP I/O pins ------------------------------
 #include <hardware/gpio.h>
 
-#define PICO_TCK_PIN 16
-#define PICO_TDI_PIN 17
+#define PICO_TCK_PIN 19
+#define PICO_TDI_PIN 21
 #define PICO_TDO_PIN 18
-#define PICO_TMS_PIN 19
-
-#define PICO_TRST_PIN 20
-#define PICO_NRST_PIN 21
-
+#define PICO_TMS_PIN 20
 
 /** Setup JTAG I/O pins: TCK, TMS, TDI, TDO, nTRST, and nRESET.
 Configures the DAP Hardware I/O pins for JTAG mode:
@@ -325,16 +321,11 @@ __STATIC_INLINE void PORT_JTAG_SETUP (void) {
   gpio_init(PICO_TDI_PIN);
   gpio_init(PICO_TDO_PIN);
   gpio_init(PICO_TMS_PIN);
-  gpio_init(PICO_TRST_PIN);
-  gpio_init(PICO_NRST_PIN);
 
   gpio_set_dir(PICO_TCK_PIN, GPIO_OUT);
   gpio_set_dir(PICO_TDI_PIN, GPIO_OUT);
   gpio_set_dir(PICO_TDO_PIN, GPIO_IN);
   gpio_set_dir(PICO_TMS_PIN, GPIO_OUT);
-  gpio_set_dir(PICO_TRST_PIN, GPIO_OUT);
-  gpio_set_dir(PICO_NRST_PIN, GPIO_OUT);
-  ;
 }
 
 /** Setup SWD I/O pins: SWCLK, SWDIO, and nRESET.
@@ -467,7 +458,7 @@ __STATIC_FORCEINLINE uint32_t PIN_TDO_IN  (void) {
 \return Current status of the nTRST DAP hardware I/O pin.
 */
 __STATIC_FORCEINLINE uint32_t PIN_nTRST_IN   (void) {
-    return gpio_get(PICO_TRST_PIN);
+    return 0;
 
 }
 
@@ -477,7 +468,7 @@ __STATIC_FORCEINLINE uint32_t PIN_nTRST_IN   (void) {
            - 1: release JTAG TRST Test Reset.
 */
 __STATIC_FORCEINLINE void     PIN_nTRST_OUT  (uint32_t bit) {
-        gpio_put(PICO_TRST_PIN, bit & 0x01);
+
 }
 
 // nRESET Pin I/O------------------------------------------
@@ -486,8 +477,7 @@ __STATIC_FORCEINLINE void     PIN_nTRST_OUT  (uint32_t bit) {
 \return Current status of the nRESET DAP hardware I/O pin.
 */
 __STATIC_FORCEINLINE uint32_t PIN_nRESET_IN  (void) {
-      return gpio_get(PICO_NRST_PIN);
-
+  return 0;
 }
 
 /** nRESET I/O pin: Set Output.
@@ -496,7 +486,7 @@ __STATIC_FORCEINLINE uint32_t PIN_nRESET_IN  (void) {
            - 1: release device hardware reset.
 */
 __STATIC_FORCEINLINE void     PIN_nRESET_OUT (uint32_t bit) {
-              gpio_put(PICO_NRST_PIN, bit & 0x01);
+
 }
 
 ///@}

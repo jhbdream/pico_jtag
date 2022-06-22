@@ -37,11 +37,10 @@ extern pio_jtag_inst_t *pio_jtag;
 #endif
 
 #define PIN_TRST 22
-
-#define PIN_TDI 17
-#define PIN_TMS 19
-#define PIN_TCK 16
-#define PIN_TDO 18
+#define PIN_TDI 21
+#define PIN_TMS 20
+#define PIN_TCK 19
+#define PIN_TDO 26
 
 #define JTAG_FREQ (1000000)
 
